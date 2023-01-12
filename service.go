@@ -16,11 +16,12 @@ import (
 )
 
 type MQTTConfig struct {
-	Host     string `envconfig:"HOST" default:"localhost"`
-	Port     int    `envconfig:"PORT" default:"1883"`
-	ClientID string `envconfig:"CLIENT_ID" default:"http2mqtt"`
-	Username string `envconfig:"USER"`
-	Password string `envconfig:"PASSWORD"`
+	Host             string        `envconfig:"HOST" default:"localhost"`
+	Port             int           `envconfig:"PORT" default:"1883"`
+	ClientID         string        `envconfig:"CLIENT_ID" default:"http2mqtt"`
+	Username         string        `envconfig:"USER"`
+	Password         string        `envconfig:"PASSWORD"`
+	SubscribeTimeout time.Duration `envconfig:"SUBSCRIBE_TIMEOUT" default:"10s"`
 }
 
 type Config struct {
@@ -49,11 +50,11 @@ func main() {
 		logrus.WithError(token.Error()).Fatal("could not connect to mqtt broker")
 	}
 
-	publisher := publisher.NewPublisher(client)
-	subscriber := subscriber.NewSubscriber(*opts)
+	p := publisher.NewPublisher(client)
+	s := subscriber.NewSubscriber(*opts, cfg.MQTT.SubscribeTimeout)
 	r := mux.NewRouter()
-	r.HandleFunc("/publish", publisher.Handle)
-	r.HandleFunc("/subscribe", subscriber.Handle)
+	r.HandleFunc("/publish", p.Handle)
+	r.HandleFunc("/subscribe", s.Handle)
 	http.Handle("/", middleware.Authenticate(cfg.APIKey, r))
 
 	server := &http.Server{

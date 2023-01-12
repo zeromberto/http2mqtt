@@ -9,14 +9,16 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func NewSubscriber(clientOptions mqtt.ClientOptions) *Subscriber {
+func NewSubscriber(clientOptions mqtt.ClientOptions, timeout time.Duration) *Subscriber {
 	return &Subscriber{
 		clientOptions: clientOptions,
+		timeout:       timeout,
 	}
 }
 
 type Subscriber struct {
 	clientOptions mqtt.ClientOptions
+	timeout       time.Duration
 }
 
 func (it *Subscriber) Handle(writer http.ResponseWriter, request *http.Request) {
@@ -50,7 +52,7 @@ func (it *Subscriber) Handle(writer http.ResponseWriter, request *http.Request) 
 	})
 	select {
 	case <-c:
-	case <-time.After(10 * time.Second):
+	case <-time.After(it.timeout):
 		writer.WriteHeader(http.StatusRequestTimeout)
 	}
 }
